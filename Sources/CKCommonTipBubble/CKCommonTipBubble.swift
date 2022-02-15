@@ -95,9 +95,13 @@ public class CKCommonTipBubble: UIView {
         
         switch config.type {
         case .darkUp, .darkDown:
-            tipsTriangleImageView.image = UIImage(named: "public_img_tipstriangle_white")
+            if let imagePath = Bundle.module.path(forResource: "public_img_tipstriangle_white", ofType: "png") {
+                tipsTriangleImageView.image = UIImage(contentsOfFile: imagePath)
+            }
         case .lightUp, .lightDown:
-            tipsTriangleImageView.image = UIImage(named: "public_img_tipstriangle_main")
+            if let imagePath = Bundle.module.path(forResource: "public_img_tipstriangle_main", ofType: "png") {
+                tipsTriangleImageView.image = UIImage(contentsOfFile: imagePath)
+            }
         }
         
         if config.type == .darkDown || config.type == .lightDown {
