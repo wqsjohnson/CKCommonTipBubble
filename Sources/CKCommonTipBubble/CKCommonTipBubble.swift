@@ -20,7 +20,6 @@ public class CKCommonTipBubbleConfig:NSObject {
     @objc public var contentCornerRadius:CGFloat = 5.0
     @objc public var contentLeftMargin:CGFloat = 5.0
     @objc public var contentRightMargin:CGFloat = 5.0
-    @objc public var tipsTriangleImage:UIImage? = UIImage(named: "public_img_tipstriangle_white")
     @objc public var tipsView:UIView = UIView.newAutoLayout()
     @objc public var inView:UIView = UIView.newAutoLayout()
     @objc public var penetrateTap:Bool = false
@@ -95,13 +94,9 @@ public class CKCommonTipBubble: UIView {
         
         switch config.type {
         case .darkUp, .darkDown:
-            if let imagePath = Bundle.module.path(forResource: "public_img_tipstriangle_white", ofType: "png") {
-                tipsTriangleImageView.image = UIImage(contentsOfFile: imagePath)
-            }
+            tipsTriangleImageView.image = UIImage(named: "public_img_tipstriangle_white", in: Bundle(for: CKCommonTipBubble.self), compatibleWith: nil)
         case .lightUp, .lightDown:
-            if let imagePath = Bundle.module.path(forResource: "public_img_tipstriangle_main", ofType: "png") {
-                tipsTriangleImageView.image = UIImage(contentsOfFile: imagePath)
-            }
+            tipsTriangleImageView.image = UIImage(named: "public_img_tipstriangle_main", in: Bundle(for: CKCommonTipBubble.self), compatibleWith: nil)
         }
         
         if config.type == .darkDown || config.type == .lightDown {
