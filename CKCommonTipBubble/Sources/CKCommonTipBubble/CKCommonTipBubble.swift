@@ -7,29 +7,46 @@
 //
 
 import UIKit
-@objc enum CKCommonTipBubbleType:Int {
+import PureLayout
+
+//通用气泡配置
+public class CKCommonTipBubbleConfig:NSObject {
+    @objc public var type:CKCommonTipBubbleType = .darkUp
+    @objc public var tips:String = "tips"
+    @objc public var tipsFont:UIFont = UIFont.systemFont(ofSize: 12)
+    @objc public var tipsColor:UIColor = .red
+    @objc public var tipsInset:UIEdgeInsets = UIEdgeInsets(top: 10.0, left: 10.0, bottom: 10.0, right: 10.0)
+    @objc public var contentBgColor:UIColor = .white
+    @objc public var contentCornerRadius:CGFloat = 5.0
+    @objc public var contentLeftMargin:CGFloat = 5.0
+    @objc public var contentRightMargin:CGFloat = 5.0
+    @objc public var tipsTriangleImage:UIImage? = UIImage(named: "public_img_tipstriangle_white")
+    @objc public var tipsView:UIView = UIView.newAutoLayout()
+    @objc public var inView:UIView = UIView.newAutoLayout()
+    @objc public var penetrateTap:Bool = false
+    @objc public var offsetY:CGFloat = 5.0
+}
+
+@objc public enum CKCommonTipBubbleType:Int {
     case darkUp    //用于暗色页面，指示气泡显示在关联 图标/按钮上方 (样式1)
     case darkDown  //用于暗色页面，指示气泡显示在关联 图标/按钮下方 (样式1)
     case lightUp   //用于亮色页面，指示气泡显示在关联 图标/按钮上方 (样式2)
     case lightDown //用于亮色页面，指示气泡显示在关联 图标/按钮下方 (样式2)
 }
 
-class CKCommonTipBubble: UIView {
-    private var type:CKCommonTipBubbleType = .darkUp
+public class CKCommonTipBubble: UIView {
     private var tipContentView = UIView.newAutoLayout()
     private var tipsTriangleImageView = UIImageView.newAutoLayout()
     private var tipLabel = UILabel.newAutoLayout()
-    private var tips = ""
+    private var config = CKCommonTipBubbleConfig()
     private var tapAction:((Bool)->Void)? //参数为YES表示气泡点击 NO为整体点击其它位置
     private var isTransition = true
     private var penetrateTap = false //透传点击事件
 
-    init(type:CKCommonTipBubbleType, tips:String, penetrateTap:Bool = false, tapAction:((Bool)->Void)?) {
+    init(config:CKCommonTipBubbleConfig, tapAction:((Bool)->Void)?) {
         super.init(frame: .zero)
-        self.type = type
-        self.tips = tips
+        self.config = config
         self.tapAction = tapAction
-        self.penetrateTap = penetrateTap
         initUI()
         show()
     }
@@ -45,53 +62,58 @@ class CKCommonTipBubble: UIView {
     private func initUI() {
         backgroundColor = .clear
         isUserInteractionEnabled = true
-        addTapGesture { [weak self](view) in
-            self?.hide(type: 0)
-        }
+        let selfGes = UITapGestureRecognizer(target: self, action: #selector(selfTapFunc))
+        addGestureRecognizer(selfGes)
         
-        tipLabel.font = CKSFont.min
+        tipLabel.font = config.tipsFont
         tipLabel.numberOfLines = 0
         
         tipsTriangleImageView.alpha = 0
         addSubview(tipsTriangleImageView)
     
-        tipContentView.roundedRect(with: cksTransformPixel2Standard(10))
+        tipContentView.layer.cornerRadius = config.contentCornerRadius
+        tipContentView.layer.masksToBounds = true
         tipContentView.isUserInteractionEnabled = true
         tipContentView.alpha = 0
         addSubview(tipContentView)
         NSLayoutConstraint.autoSetPriority(.defaultHigh) {
-            tipContentView.autoPinEdge(.left, to: .left, of: self, withOffset: CKSPadding.small, relation: .greaterThanOrEqual)
-            tipContentView.autoPinEdge(.right, to: .right, of: self, withOffset: -CKSPadding.small, relation: .lessThanOrEqual)
+            tipContentView.autoPinEdge(.left, to: .left, of: self, withOffset: config.contentLeftMargin, relation: .greaterThanOrEqual)
+            tipContentView.autoPinEdge(.right, to: .right, of: self, withOffset: -config.contentRightMargin, relation: .lessThanOrEqual)
         }
         NSLayoutConstraint.autoSetPriority(.defaultLow) {
             tipContentView.autoAlignAxis(.vertical, toSameAxisOf: tipsTriangleImageView)
         }
-        tipContentView.addTapGesture { [weak self](view) in
-            self?.hide(type: 1)
-        }
+        let tipGes = UITapGestureRecognizer(target: self, action: #selector(tipTapFunc))
+        tipContentView.addGestureRecognizer(tipGes)
         
-        let tipMargin = CKSPadding.normal
-        let tipInset = UIEdgeInsets(top: tipMargin, left: tipMargin, bottom: tipMargin, right: tipMargin)
         tipContentView.addSubview(tipLabel)
-        tipLabel.autoPinEdgesToSuperviewEdges(with: tipInset)
+        tipLabel.autoPinEdgesToSuperviewEdges(with: config.tipsInset)
         
-        switch type {
+        
+        tipContentView.backgroundColor = config.contentBgColor
+        tipLabel.textColor = config.tipsColor
+        
+        switch config.type {
         case .darkUp, .darkDown:
-            tipContentView.backgroundColor = CKSColor.white
-            tipLabel.textColor = CKSColor.ff583c
-            tipsTriangleImageView.image = "public_img_tipstriangle_white".localizedImage()
+            tipsTriangleImageView.image = UIImage(named: "public_img_tipstriangle_white")
         case .lightUp, .lightDown:
-            tipContentView.backgroundColor = CKSColor.ff583c
-            tipLabel.textColor = CKSColor.white
-            tipsTriangleImageView.image = "public_img_tipstriangle_main".localizedImage()
+            tipsTriangleImageView.image = UIImage(named: "public_img_tipstriangle_main")
         }
         
-        if type == .darkDown || type == .lightDown {
+        if config.type == .darkDown || config.type == .lightDown {
             tipsTriangleImageView.transform = CGAffineTransform(rotationAngle: CGFloat.pi)
             tipContentView.autoPinEdge(.top, to: .bottom, of: tipsTriangleImageView)
         } else {
             tipContentView.autoPinEdge(.bottom, to: .top, of: tipsTriangleImageView)
         }
+    }
+    
+    @objc private func selfTapFunc() {
+        hide(type: 0)
+    }
+    
+    @objc private func tipTapFunc() {
+        hide(type: 1)
     }
     
     private func hide(type:Int) {
@@ -124,23 +146,23 @@ class CKCommonTipBubble: UIView {
     }
     
     //更新提示内容
-    @objc func updateTips(tips:String) {
+    @objc public func updateTips(tips:String) {
         self.tipLabel.text = tips
     }
     
-    @objc func updateTipsTriangleImageViewConstant(tipsView:UIView, inView:UIView, offsetY:CGFloat) {
-        inView.superview?.layoutIfNeeded()
-        tipLabel.preferredMaxLayoutWidth = inView.frame.size.width - CKSPadding.small * 2 - CKSPadding.normal * 2
-        tipLabel.text = tips
-        tipsTriangleImageView.autoAlignAxis(.vertical, toSameAxisOf: tipsView)
-        if type == .darkDown || type == .lightDown {
-            tipsTriangleImageView.autoPinEdge(.top, to: .bottom, of: tipsView, withOffset: offsetY)
+    @objc func updateTipsTriangleImageViewConstant(config:CKCommonTipBubbleConfig) {
+        config.inView.superview?.layoutIfNeeded()
+        tipLabel.preferredMaxLayoutWidth = config.inView.frame.size.width - (config.contentLeftMargin + config.contentRightMargin)  - config.tipsInset.left - config.tipsInset.right
+        tipLabel.text = config.tips
+        tipsTriangleImageView.autoAlignAxis(.vertical, toSameAxisOf: config.tipsView)
+        if config.type == .darkDown || config.type == .lightDown {
+            tipsTriangleImageView.autoPinEdge(.top, to: .bottom, of: config.tipsView, withOffset: config.offsetY)
         } else {
-            tipsTriangleImageView.autoPinEdge(.bottom, to: .top, of: tipsView, withOffset: -offsetY)
+            tipsTriangleImageView.autoPinEdge(.bottom, to: .top, of: config.tipsView, withOffset: -config.offsetY)
         }
     }
     
-    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+    public override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         // 1.判断当前控件能否接收事件
         if (isUserInteractionEnabled == false || isHidden == true || alpha <= 0.01) {return nil}
 
@@ -171,11 +193,11 @@ class CKCommonTipBubble: UIView {
     
     //offsetY不论图标位置，均传绝对正数值
     @discardableResult
-    @objc class func showBubble(type:CKCommonTipBubbleType, tips:String, tipsView:UIView, inView:UIView, penetrateTap:Bool = false, offsetY:CGFloat = cksTransformPixel2Standard(10), tapAction:((Bool)->Void)?) -> CKCommonTipBubble {
-        let bubbleView = CKCommonTipBubble(type: type, tips: tips, penetrateTap:penetrateTap, tapAction: tapAction)
-        inView.addSubview(bubbleView)
+    @objc class public func showBubble(config:CKCommonTipBubbleConfig, tapAction:((Bool)->Void)?) -> CKCommonTipBubble {
+        let bubbleView = CKCommonTipBubble(config: config, tapAction: tapAction)
+        config.inView.addSubview(bubbleView)
         bubbleView.autoPinEdgesToSuperviewEdges()
-        bubbleView.updateTipsTriangleImageViewConstant(tipsView: tipsView, inView: inView, offsetY:offsetY)
+        bubbleView.updateTipsTriangleImageViewConstant(config: config)
         return bubbleView
     }
 }
