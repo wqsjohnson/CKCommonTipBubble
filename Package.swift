@@ -20,7 +20,13 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
             name: "CKCommonTipBubble",
-            dependencies: ["PureLayout"]),
+            dependencies: ["PureLayout"],
+            resources: [
+                .process("Resources/Images/public_img_tipstriangle_main@3x.png"),
+                .process("Resources/Images/public_img_tipstriangle_main@2x.png"),
+                .process("Resources/Images/public_img_tipstriangle_white@3x.png"),
+                .process("Resources/Images/public_img_tipstriangle_white@2x.png"),
+              ]),
         .testTarget(
             name: "CKCommonTipBubbleTests",
             dependencies: ["CKCommonTipBubble"]),
